@@ -1,0 +1,18 @@
+name: orthosimulator
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python
+  - numpy
+  - scipy
+  - biopython
+  - ete4
+  - mafft
+  - trimal
+  - java-jdk
+  - mpmath
+  - lxml
+  - pip
+  - pip:
+      - pygad

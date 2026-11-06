@@ -1,0 +1,16 @@
+output=GA_output
+Orthogroup_train_results=Training_output
+generations=5
+sample_size=100
+num_parents_mating=4
+sol_per_pop=16
+num_genes=4
+parent_selection_type=nsga2
+keep_parents=1
+crossover_type=uniform
+crossover_probability=0.9
+mutation_type=random
+mutation_percent_genes=10
+save_solutions=1
+parallel_processing=16
+Orthogroups=10

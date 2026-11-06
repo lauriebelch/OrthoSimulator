@@ -1,0 +1,27 @@
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# macOS metadata files
+.DS_Store
+**/.DS_Store
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# R temporary/session files
+.Rhistory
+.RData
+.Rproj.user/
+
+# Logs and temporary files
+*.tmp
+
+# PFAM data is shipped as PFAM/archives/<species>.tar.xz and unpacked on first use.
+# The unpacked files are not tracked.
+PFAM/pfam_genomes/
+PFAM/pfamscan_results/
+PFAM/pfam_results/
+
+# Output of the example checks
+example_checks_*/
