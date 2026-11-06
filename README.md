@@ -202,8 +202,8 @@ The other scripts in `benchmarking/` are `bootstrap_rank_support.py` and `bootst
 
 ## Citation
 
-Holmes J, Kelly SB, Belcher LJ. OrthoSimulator: Empirically trained simulations for ground-truth benchmarking of orthology inference. *bioRxiv* (2026).
+Holmes J, Kelly SK, Belcher LJ. OrthoSimulator: Empirically trained simulations for ground-truth benchmarking of orthology inference. *bioRxiv* (2026).
 
 ## Contact
 
-Laurence Belcher, Department of Biology, University of Oxford: laurence.belcher@biology.ox.ac.uk. Please report problems as [GitHub issues](https://github.com/lauriebelch/OrthoSimulator/issues).
+Please report problems as [GitHub issues](https://github.com/lauriebelch/OrthoSimulator/issues).
