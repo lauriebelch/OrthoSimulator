@@ -374,6 +374,12 @@ def run_orthogroup_simulation(
     # printing and saving output
     print("\n")
 
+    skipped = og.SkippedOrthogroups(args)
+    if skipped:
+        print(f"WARNING: {len(skipped)} of {args.n} orthogroups were skipped because AliSim failed on them "
+              f"(for example when a very deep tree deletes nearly every site). They are left out of every "
+              f"output file. Skipped: {', '.join(skipped[:20])}{' ...' if len(skipped) > 20 else ''}\n")
+
     og.CopyAlignments(args)
     print("Written alignments\n")
 

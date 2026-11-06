@@ -167,3 +167,53 @@ def test_check_for_root_looks_for_a_discretisation_point_near_the_species_count(
             with open(os.path.join(tmp, "temporary_files", "1.unpruned.tree"), "w") as f:
                 f.write(f"(a:1,b:1)XTAGX1_1:1[VERTEXTYPE=Speciation DISCPT={discpt}];")
             assert og.CheckForRoot("1", args) == expected, discpt
+
+
+##########################################
+######### skipped orthogroups ############
+##########################################
+
+def make_finished_and_skipped_run(tmp, n=4, finished=("0", "2", "3")):
+    '''a run where orthogroup 1 failed: it has trees and a log but no alignment'''
+    temp = os.path.join(tmp, "temporary_files")
+    os.makedirs(temp)
+    os.makedirs(os.path.join(tmp, "tree_files"))
+    for i in range(n):
+        og_id = str(i)
+        with open(os.path.join(temp, f"{og_id}.pruned_relaxed_relabelled.tree"), "w") as f:
+            f.write("(a:1,b:1);")
+        with open(os.path.join(temp, f"{og_id}.txt"), "w") as f:
+            f.write(f"orthogroup={og_id}\nnum_genes=2\nnum_species=2\n")
+        if og_id in finished:
+            with open(os.path.join(temp, f"{og_id}.alignment.fa"), "w") as f:
+                f.write(f">sp1_{og_id}_1\nMKV\n>sp2_{og_id}_1\nMKV\n")
+    return SimpleNamespace(o=tmp, n=n)
+
+
+def test_orthogroups_without_an_alignment_are_reported_as_skipped():
+    with tempfile.TemporaryDirectory() as tmp:
+        args = make_finished_and_skipped_run(tmp)
+        assert og.FinishedOrthogroups(args) == {"0", "2", "3"}
+        assert og.SkippedOrthogroups(args) == ["1"]
+
+
+def test_skipped_orthogroups_are_left_out_of_the_tree_files():
+    with tempfile.TemporaryDirectory() as tmp:
+        args = make_finished_and_skipped_run(tmp)
+        og.CopyTrees(args)
+        assert sorted(os.listdir(os.path.join(tmp, "tree_files"))) == ["0.tre", "2.tre", "3.tre"]
+
+
+def test_skipped_orthogroups_are_left_out_of_the_statistics_table():
+    with tempfile.TemporaryDirectory() as tmp:
+        args = make_finished_and_skipped_run(tmp)
+        og.BuildOrthogroupStats(args)
+        with open(os.path.join(tmp, "Simulated_Orthogroup_statistics.txt")) as f:
+            rows = [line.split("\t")[0] for line in f][1:]
+        assert rows == ["0", "2", "3"]
+
+
+def test_nothing_is_reported_skipped_when_every_orthogroup_finished():
+    with tempfile.TemporaryDirectory() as tmp:
+        args = make_finished_and_skipped_run(tmp, finished=("0", "1", "2", "3"))
+        assert og.SkippedOrthogroups(args) == []

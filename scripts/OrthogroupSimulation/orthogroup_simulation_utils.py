@@ -1190,6 +1190,18 @@ def ConcatOrthologs(args):
                     else:
                         out.write(line)
 
+## orthogroups that finished: those with an alignment. An orthogroup is skipped
+## when AliSim fails on it, for example because the tree is so deep that
+## nearly every site is deleted (strong ILS together with a high indel rate).
+def FinishedOrthogroups(args):
+    files = glob.glob(os.path.join(args.o, "temporary_files", "*.alignment.fa"))
+    return {os.path.basename(f).split(".", 1)[0] for f in files}
+
+## the requested orthogroups that did not finish, as a sorted list of ids
+def SkippedOrthogroups(args):
+    finished = FinishedOrthogroups(args)
+    return [str(i) for i in range(int(args.n)) if str(i) not in finished]
+
 ## function that saves alignments
 
 def CopyAlignments(args):
@@ -1205,9 +1217,12 @@ def CopyTrees(args):
     suffix = ".pruned_relaxed_relabelled.tree"
     files = glob.glob(os.path.join(outdir, "temporary_files", f"*{suffix}"))
     dest = os.path.join(outdir, "tree_files")
+    finished = FinishedOrthogroups(args)
     for src in sorted(files):
         fname = os.path.basename(src)
         outname = fname[:-len(suffix)]
+        if outname not in finished:
+            continue
         shutil.copy2(src, os.path.join(dest, f"{outname}.tre"))
 
 ## function that saves proteomes
@@ -1288,9 +1303,10 @@ def BuildOrthogroupStats(args):
     # I should have named the logfile for each og something else
     # because now we have to horrible regex to find the exact file
     logs_dir = os.path.join(outdir, "temporary_files")
+    finished = FinishedOrthogroups(args)
     logs = sorted(
     (os.path.join(logs_dir, fn) for fn in os.listdir(logs_dir)
-     if re.fullmatch(r"\d+\.txt", fn)),
+     if re.fullmatch(r"\d+\.txt", fn) and fn[:-4] in finished),
     key=lambda p: int(os.path.basename(p)[:-4])
 )
     # define the order of variables
