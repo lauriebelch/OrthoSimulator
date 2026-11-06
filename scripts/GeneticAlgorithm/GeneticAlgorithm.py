@@ -1,15 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 17 14:02:26 2026
 
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Apr 23 11:19:47 2026
-
-@author: JH
-"""
 import sys
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
@@ -22,7 +11,6 @@ import time
 import csv
 import numpy as np
 import scripts.GeneticAlgorithm.ScoreSomeParameters as ScoreSomeParameters
-#dup_rate,loss_rate,gbc_val
 def write_config_file(complete_parameters,solution,completed_parameters_file):
     input_folder = os.path.abspath(complete_parameters["Orthogroup_train_results"])
 
@@ -117,7 +105,6 @@ def GA_workflow(complete_parameters, output_abolsute_path, threads, current_file
     num_parents_mating = int(complete_parameters["num_parents_mating"])
     sol_per_pop = int(complete_parameters["sol_per_pop"])
     num_genes = len(function_inputs)
-    #parent_selection_type = "sss"
     parent_selection_type = complete_parameters["parent_selection_type"]
     keep_parents = int(complete_parameters["keep_parents"])
     crossover_type = complete_parameters["crossover_type"]
@@ -221,7 +208,7 @@ def GA_workflow(complete_parameters, output_abolsute_path, threads, current_file
     peak_solution = [float(i) for i in peak_solution]
     peak_solution_fitness = [float(i) for i in peak_solution_fitness]
     solution, solution_fitness, solution_idx = ga_instance.best_solution()   
-    ## need to find GA peak solution here...	
+
 
  
     with open(report_path,"a") as report:
@@ -253,11 +240,6 @@ def GA_workflow(complete_parameters, output_abolsute_path, threads, current_file
     print("Wrote Simulation final parameter file to: %s" % peak_parameter_file)
     print("Wrote Simulation peak parameter file to: %s" % completed_parameter_file)
 
-
-
-    #print(ga_instance.best_solutions_fitness)
-    #return solution, solution_fitness, report_path
-    #dup_rate,loss_rate,gbc_val
 
 
 
