@@ -16,6 +16,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
+import subprocess
 import tempfile
 from types import SimpleNamespace
 
@@ -84,6 +85,10 @@ def relax_branch_lengths_and_get_input_tree(args):
 
     def fake_run(cmd, *a, **k):
         captured.append(cmd)
+        # BranchRelaxer writes the tree named after -o; pretend it did
+        with open(cmd[cmd.index("-o") + 1], "w") as f:
+            f.write("();")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     og.subprocess.run = fake_run
     try:

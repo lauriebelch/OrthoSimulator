@@ -245,6 +245,15 @@ def check_inputs_and_load_parameters(args):
     if not os.access(str(args.iqtree_path), os.X_OK):
         raise ValueError(f"IQ-TREE exists but is not executable: {args.iqtree_path}")
 
+    # SaGePhy needs an ultrametric species tree (all tips the same distance
+    # from the root) and otherwise stops with a Java stack trace
+    check_species_tree_is_ultrametric(args.s)
+
+    # SaGePhy rejects a birth-bias (gbc) of 0 or less and writes no trees
+    gbc = getattr(args, "gbc", None)
+    if gbc is not None and float(gbc) <= 0:
+        raise ValueError(f"gbc must be > 0 (got {gbc}).")
+
     # Fail fast on a bad ils_theta rather than discovering it deep inside a
     # multiprocessing worker. Only checked when ILS was requested.
     ils_theta = getattr(args, "ils_theta", None)
@@ -253,6 +262,31 @@ def check_inputs_and_load_parameters(args):
             f"ils_theta must be > 0 (got {ils_theta}). A value of 0 is the "
             "extreme case of maximal ILS, not an off switch. To switch ILS "
             "off, leave out --ils-theta."
+        )
+
+
+def check_species_tree_is_ultrametric(tree_path, tolerance=1e-3):
+    """
+    Raise a clear error if the tips of the species tree are not all the same
+    distance from the root. Rounding in the file is tolerated.
+    """
+    from ete4 import Tree
+    tree = Tree(open(tree_path).read().strip(), parser=1)
+    depths = []
+    for leaf in tree.leaves():
+        depth, node = 0.0, leaf
+        while node.up is not None:
+            depth += node.dist or 0.0
+            node = node.up
+        depths.append(depth)
+    longest = max(depths)
+    if longest <= 0:
+        raise ValueError(f"The species tree has no branch lengths: {tree_path}")
+    if (longest - min(depths)) / longest > tolerance:
+        raise ValueError(
+            f"The species tree is not ultrametric: tip depths range from {min(depths):.4g} to "
+            f"{longest:.4g} in {tree_path}. OrthoSimulator needs a tree whose tips are all the "
+            "same distance from the root."
         )
 
 

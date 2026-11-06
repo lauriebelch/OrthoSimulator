@@ -68,7 +68,7 @@ def load_orthofinder(file_path):
                     print(f"Skipping unparseable gene: {gene_clean}")
                     continue
                 try:
-                    refog = int(fields[2])
+                    refog = int(fields[-2])
                 except ValueError:
                     print(f"Skipping gene with non-numeric refOG field: {gene_clean}")
                     continue
@@ -100,7 +100,7 @@ def load_fastoma(file_path):
                 print(f"Skipping unparseable gene row: {line}")
                 continue
             try:
-                refog = int(fields[2])
+                refog = int(fields[-2])
             except ValueError:
                 print(f"Skipping gene with non-numeric refOG field: {gene_clean}")
                 continue
@@ -130,7 +130,7 @@ def load_broccoli(file_path):
                     print(f"Skipping unparseable gene: {gene_clean}")
                     continue
                 try:
-                    refog = int(fields[2])
+                    refog = int(fields[-2])
                 except ValueError:
                     print(f"Skipping gene with non-numeric refOG field: {gene_clean}")
                     continue
@@ -185,7 +185,7 @@ def load_sonicparanoid(file_path):
                         print(f"Skipping unparseable gene: {gene_clean}")
                         continue
                     try:
-                        refog = int(fields[2])
+                        refog = int(fields[-2])
                     except ValueError:
                         print(f"Skipping gene with non-numeric refOG field: {gene_clean}")
                         continue

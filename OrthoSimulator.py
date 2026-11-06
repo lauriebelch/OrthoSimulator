@@ -259,10 +259,20 @@ def check_options(function_call,args):
         else:
             ##open and read config...
             with open(os.path.abspath(args['Config'])) as config:
-                for line in config:
-                    arg_,value_ = line.split("=")
-                    arg = arg_.rstrip().lstrip()
-                    value = value_.rstrip().lstrip()
+                for line_number, line in enumerate(config, start=1):
+                    line = line.strip()
+                    # blank lines and comments are allowed
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" not in line:
+                        print("Config file line %d is not in key=value form: %s" % (line_number, line))
+                        sys.exit()
+                    arg_,value_ = line.split("=", 1)
+                    arg = arg_.strip()
+                    value = value_.strip()
+                    if arg not in args:
+                        print("Unknown option in config file (line %d): %s" % (line_number, arg))
+                        sys.exit()
                     if args[arg] == None:
                         args[arg] = value
             missing,complete_parameters   = check_missing(requirements,args)
@@ -287,7 +297,7 @@ def create_outputs_and_configs(complete_parameters,current_file_path, threads):
         sys.exit()
     else:
         try:
-            os.mkdir(output_abolsute_path)
+            os.makedirs(output_abolsute_path)
         except:
             print("unknown error while creating %s" % output_abolsute_path)
             sys.exit()

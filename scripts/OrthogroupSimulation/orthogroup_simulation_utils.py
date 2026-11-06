@@ -130,7 +130,14 @@ def SimulateGeneTree(outname, args):
     "-rt", str(args.replacement_prob),
     str(args.s), str(dupes), str(loss), str(trans_rate), str(output1)]
     #print(" ".join(cmd))
-    subprocess.run(cmd, check=True, timeout=60)
+    proc = subprocess.run(cmd, check=True, timeout=60, capture_output=True, text=True)
+    # SaGePhy can reject its options and still exit normally, writing no tree,
+    # so check that the tree is there rather than failing later on a missing file
+    if not os.path.isfile(output1 + ".pruned.tree"):
+        raise RuntimeError(
+            f"SaGePhy GuestTreeGen wrote no gene tree for orthogroup {outname}. "
+            "Its output was:\n" + (proc.stdout + proc.stderr)[-1500:]
+        )
     # add to logfile for this orthogroup
     logfile = os.path.join(str(args.o), 'temporary_files', f"{outname}.txt")
     with open(logfile, "a") as f:
@@ -209,6 +216,9 @@ def ApplyILSCoalescent(outname, args):
         f.write(f"ils_theta={theta}\n")
         f.write(f"ils_norm_rf={norm_rf}\n")
 
+# how many times BranchRelaxer is tried (with a new sigma each time) before giving up
+MAX_RELAX_ATTEMPTS = 10
+
 # relax branch lengths using sagephy
 def RelaxBranchLengths(outname, args):
     # names need to be species_X_Y
@@ -222,8 +232,6 @@ def RelaxBranchLengths(outname, args):
     sigma = random.random() * max_sigma2
     '''
     start = args.max_start_rate
-    sigma = np.random.lognormal(mean=args.sigma_log_mean, sigma=args.sigma_log_sd) ** 2
-    sigma = min(sigma, 100)
     # define input path - the pruned tree from sagephy, or, when ILS is
     # switched on, the coalescent-rearranged version of it
     # (see ApplyILSCoalescent above)
@@ -231,12 +239,27 @@ def RelaxBranchLengths(outname, args):
     input2 = os.path.join(str(args.o), 'temporary_files', str(outname)+tree_suffix)
     # define output path - relaxed pruned tree
     output2 = os.path.join(str(args.o), 'temporary_files', str(outname)+".pruned_relaxed.tree")
-    # command to be run
-    cmd = [
-    "java", "-jar", str(args.sagephy_path), "BranchRelaxer",
-    input2, str(args.relax_model), str(start), str(sigma), "--keep-interior-names",
-    "-o", output2]
-    subprocess.run(cmd, check=True, timeout=60)
+    # On a very deep tree (for example under very strong ILS) BranchRelaxer
+    # can fail to find valid rates for a large sigma. It then exits normally
+    # and writes no tree, so we draw sigma again, up to MAX_RELAX_ATTEMPTS times.
+    for attempt in range(MAX_RELAX_ATTEMPTS):
+        sigma = np.random.lognormal(mean=args.sigma_log_mean, sigma=args.sigma_log_sd) ** 2
+        sigma = min(sigma, 100)
+        # command to be run
+        cmd = [
+        "java", "-jar", str(args.sagephy_path), "BranchRelaxer",
+        input2, str(args.relax_model), str(start), str(sigma), "--keep-interior-names",
+        "-o", output2]
+        proc = subprocess.run(cmd, check=True, timeout=60, capture_output=True, text=True)
+        if os.path.isfile(output2):
+            break
+    else:
+        raise RuntimeError(
+            f"SaGePhy BranchRelaxer wrote no tree for orthogroup {outname} after "
+            f"{MAX_RELAX_ATTEMPTS} attempts. Its output was:\n" + (proc.stdout + proc.stderr)[-1500:]
+            + ("\nVery small ils_theta values make gene trees very deep, which can cause this."
+               if ILSEnabled(args) else "")
+        )
     # add to logfile for this orthogroup
     logfile = os.path.join(str(args.o), 'temporary_files', f"{outname}.txt")
     with open(logfile, "a") as f:

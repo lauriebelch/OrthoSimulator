@@ -20,7 +20,6 @@ The simulations are trained on real data. You give OrthoSimulator the orthogroup
 - [PFAM data](#pfam-data)
 - [Output files](#output-files)
 - [Benchmarking an orthology inference tool](#benchmarking-an-orthology-inference-tool)
-- [Tests](#tests)
 - [Citation](#citation)
 - [Contact](#contact)
 
@@ -101,7 +100,7 @@ A config file has one `key=value` per line. `ExampleData/example_simulation_conf
 
 ## Incomplete lineage sorting (optional)
 
-SaGePhy joins gene lineages exactly at each speciation, so by itself it cannot produce incomplete lineage sorting (ILS). To test the effect of ILS, add `--ils-theta` (or `ils_theta=` in the config file). After SaGePhy simulates a gene tree, OrthoSimulator rearranges the tree under the multispecies coalescent and uses the rearranged tree to simulate the sequences. Lower values of theta give more ILS. Theta must be greater than 0.
+SaGePhy joins gene lineages exactly at each speciation, so by itself it cannot produce incomplete lineage sorting (ILS). To test the effect of ILS, add `--ils-theta` (or `ils_theta=` in the config file). After SaGePhy simulates a gene tree, OrthoSimulator rearranges the tree under the multispecies coalescent and uses the rearranged tree to simulate the sequences. Lower values of theta give more ILS. Theta must be greater than 0. Very small values make the gene trees extremely deep: 0.1 works, but 0.01 is impractically slow.
 
 ```bash
 python OrthoSimulator.py \
@@ -200,14 +199,6 @@ python benchmarking/benchmark.py \
 `--tool` can be `orthofinder`, `fastoma`, `broccoli` or `sonicparanoid2`. The script reports missing reference orthogroups, missing genes, fusion, fission, recall, precision, F1 and entropy.
 
 The other scripts in `benchmarking/` are `bootstrap_rank_support.py` and `bootstrap_rank_summarize.py`, which test how well supported the OrthoBench ranking of tools is, and `check_paper_numbers.py`, which recomputes the headline numbers in the paper from the result tables.
-
-## Tests
-
-```bash
-python tests/run_all_tests.py
-```
-
-runs the unit tests (these need no input data). `bash tests/run_example_checks.sh --threads 8` also runs OrthoSimulator end to end on the example data, with and without ILS, and for every PFAM species.
 
 ## Citation
 
