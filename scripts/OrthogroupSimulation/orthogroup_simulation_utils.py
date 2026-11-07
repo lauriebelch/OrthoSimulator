@@ -1120,6 +1120,11 @@ def RunOrthogroup(outname, args):
     alisim_result = SimulateAlignmentPartition(outname, args)
     if alisim_result is None:
         print(f"[{outname}] AliSim failed. Skipping this orthogroup.")
+        # a crashed AliSim can leave a truncated alignment behind; an orthogroup
+        # counts as finished when its alignment file exists, so remove it
+        partial = Path(args.o) / "temporary_files" / f"{outname}.alignment.fa"
+        if partial.exists():
+            partial.unlink()
         return
     GapShuffleAlignment(outname, args)
     unhealthy = CheckAlignmentHealth(outname, args)

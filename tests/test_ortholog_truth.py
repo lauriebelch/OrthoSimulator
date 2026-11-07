@@ -217,3 +217,31 @@ def test_nothing_is_reported_skipped_when_every_orthogroup_finished():
     with tempfile.TemporaryDirectory() as tmp:
         args = make_finished_and_skipped_run(tmp, finished=("0", "1", "2", "3"))
         assert og.SkippedOrthogroups(args) == []
+
+
+def test_a_crashed_alisim_run_leaves_no_partial_alignment_behind():
+    '''AliSim can crash after writing part of an alignment. The orthogroup is
+    skipped, so that file must not make it look finished.'''
+    steps = ["SimulateGeneTree", "RelaxBranchLengths", "RelabelRelaxedTree", "SelectSequence", "MakePartitionPFAM"]
+    saved = {name: getattr(og, name) for name in steps + ["SimulateAlignmentPartition", "ILSEnabled"]}
+    with tempfile.TemporaryDirectory() as tmp:
+        args = make_finished_and_skipped_run(tmp)    # orthogroup 1 has a tree and a log but no alignment
+        partial = os.path.join(tmp, "temporary_files", "1.alignment.fa")
+
+        def crashed_alisim(outname, a):
+            with open(partial, "w") as f:
+                f.write(">sp1_1_1\nMK")              # one truncated sequence, as a crash leaves it
+            return None
+
+        try:
+            for name in steps:
+                setattr(og, name, lambda *a, **k: None)
+            og.ILSEnabled = lambda a: False
+            og.SimulateAlignmentPartition = crashed_alisim
+            og.RunOrthogroup("1", args)
+        finally:
+            for name, func in saved.items():
+                setattr(og, name, func)
+        assert not os.path.exists(partial)
+        assert og.SkippedOrthogroups(args) == ["1"]
+        assert og.FinishedOrthogroups(args) == {"0", "2", "3"}
