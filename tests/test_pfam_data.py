@@ -182,3 +182,33 @@ def test_unpack_rejects_files_outside_the_expected_names():
         else:
             raise AssertionError("an unexpected archive entry was accepted")
         assert not os.path.exists(os.path.join(root, "..", "escape.txt"))
+
+
+def test_unpack_is_safe_when_many_processes_unpack_the_same_species_at_once():
+    '''The GA evaluates solutions in parallel, and on a fresh copy each one unpacks the
+    starting species the first time it is used. On the server (8 Nov) several processes
+    wrote the same temporary file and all but one failed to rename it.'''
+    import multiprocessing as mp
+    species = "Saccharomyces_cerevisiae"
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.dirname(pfam_archive.archive_path(tmp, species)), exist_ok=True)
+        with open(pfam_archive.archive_path(PFAM_ROOT, species), "rb") as src, \
+             open(pfam_archive.archive_path(tmp, species), "wb") as dst:
+            dst.write(src.read())
+        with mp.get_context("fork").Pool(8) as pool:
+            try:
+                pool.starmap(pfam_archive.unpack, [(tmp, species)] * 16)
+            except Exception as error:
+                raise AssertionError(f"parallel unpack failed: {error!r}")
+        # every file complete and identical to a single unpack, and no temporary files left
+        with tempfile.TemporaryDirectory() as ref:
+            os.makedirs(os.path.dirname(pfam_archive.archive_path(ref, species)), exist_ok=True)
+            with open(pfam_archive.archive_path(tmp, species), "rb") as src, \
+                 open(pfam_archive.archive_path(ref, species), "wb") as dst:
+                dst.write(src.read())
+            pfam_archive.unpack(ref, species)
+            for rel in pfam_archive.species_files(species):
+                with open(os.path.join(tmp, rel), "rb") as a, open(os.path.join(ref, rel), "rb") as b:
+                    assert a.read() == b.read(), f"{rel} differs after a parallel unpack"
+        leftovers = [f for d, _, fs in os.walk(tmp) for f in fs if f.endswith(".part")]
+        assert leftovers == [], leftovers

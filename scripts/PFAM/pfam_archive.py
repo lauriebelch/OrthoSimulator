@@ -24,6 +24,7 @@ import glob
 import os
 import sys
 import tarfile
+import uuid
 
 ARCHIVE_DIR = "archives"
 
@@ -77,14 +78,22 @@ def unpack(pfam_root, species):
             if os.path.exists(target):
                 continue
             os.makedirs(os.path.dirname(target), exist_ok=True)
-            tmp = target + ".part"
-            with tar.extractfile(member) as src, open(tmp, "wb") as dst:
-                while True:
-                    block = src.read(1 << 20)
-                    if not block:
-                        break
-                    dst.write(block)
-            os.replace(tmp, target)
+            # a temporary name of its own: several processes (for example the GA's
+            # parallel fitness evaluations) can unpack the same species at once. Each
+            # writes a complete copy and renames it into place; the rename is atomic,
+            # so the target is never partly written and the last identical copy wins.
+            tmp = f"{target}.{os.getpid()}.{uuid.uuid4().hex}.part"
+            try:
+                with tar.extractfile(member) as src, open(tmp, "wb") as dst:
+                    while True:
+                        block = src.read(1 << 20)
+                        if not block:
+                            break
+                        dst.write(block)
+                os.replace(tmp, target)
+            finally:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
             written += 1
     return written
 
