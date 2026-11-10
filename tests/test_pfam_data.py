@@ -238,3 +238,21 @@ def test_pfam_model_extractor_stops_when_no_domain_model_could_be_made():
             assert stop.code == 1
         else:
             raise AssertionError("run() should stop when no domain model could be made")
+
+
+def test_simulation_says_clearly_when_a_species_has_no_domain_models():
+    from types import SimpleNamespace
+    import scripts.OrthogroupSimulation.orthogroup_simulation_utils as og
+    with tempfile.TemporaryDirectory() as tmp:
+        table = os.path.join(tmp, "Toy_pfam_models.csv")
+        with open(table, "w") as f:
+            f.write("file,model,I,alpha,rates,alisim_model\ngene1,,,,,\ngene2,,,,,\n")
+        try:
+            og.SelectRandomDomainModel(SimpleNamespace(d=table))
+        except ValueError as error:
+            assert "Run --PFAM again" in str(error)
+        else:
+            raise AssertionError("an empty model table should give a clear error")
+        with open(table, "a") as f:
+            f.write("gene3,JTT+G4,,1.0,,JTT+G4{1.0}\n")
+        assert og.SelectRandomDomainModel(SimpleNamespace(d=table)) == "JTT+G4{1.0}"

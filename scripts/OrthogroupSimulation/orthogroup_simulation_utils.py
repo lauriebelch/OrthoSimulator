@@ -448,6 +448,11 @@ def SelectRandomDomainModel(args):
         for row in reader:
             if row.get("alisim_model"):
                 values.append(row["alisim_model"])
+    if not values:
+        # a model table with no models (for example from a --PFAM run that failed before
+        # e11b100) would otherwise end in an IndexError deep inside the worker pool
+        raise ValueError(f"No domain substitution models in {csv_file}. "
+                         "Run --PFAM again for this species to estimate them.")
     return random.choice(values)
 
 
