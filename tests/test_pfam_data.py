@@ -212,3 +212,29 @@ def test_unpack_is_safe_when_many_processes_unpack_the_same_species_at_once():
                     assert a.read() == b.read(), f"{rel} differs after a parallel unpack"
         leftovers = [f for d, _, fs in os.walk(tmp) for f in fs if f.endswith(".part")]
         assert leftovers == [], leftovers
+
+
+def test_pfam_model_extractor_uses_the_bundled_iqtree():
+    '''--PFAM estimates a model per domain with IQ-TREE. It called "iqtree3" from the PATH,
+    but IQ-TREE ships in bin/ and is not on the PATH, so every model failed silently.'''
+    from scripts.PFAM import PfamModelExtractor as pme
+    assert pme.iqtree_executable() == os.path.join(REPO_ROOT, "bin", "iqtree3")
+
+
+def test_pfam_model_extractor_stops_when_no_domain_model_could_be_made():
+    '''With no model at all the new species cannot be simulated (the simulation crashed
+    later with an IndexError), so --PFAM must stop with an error instead.'''
+    from scripts.PFAM import PfamModelExtractor as pme
+    with tempfile.TemporaryDirectory() as tmp:
+        scans = os.path.join(tmp, "scans")
+        os.makedirs(scans)
+        with open(os.path.join(scans, "Toy_pfam.txt"), "w") as f:
+            f.write("# header\n\nseq1  1 50 1 50 PF00069.30 Pkinase Domain 1 50 50 40.0 1e-9 1 No_clan\n")
+        ex = pme.PfamModelExtractor(scans, os.path.join(tmp, "results"), 1)
+        ex.process_one_pfam = lambda pfam_id: None   # every model fails, as when IQ-TREE is missing
+        try:
+            ex.run()
+        except SystemExit as stop:
+            assert stop.code == 1
+        else:
+            raise AssertionError("run() should stop when no domain model could be made")

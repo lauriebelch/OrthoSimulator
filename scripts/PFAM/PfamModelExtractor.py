@@ -57,6 +57,18 @@ def safe_int_threads(value):
     return threads
 
 
+def iqtree_executable():
+    """IQ-TREE 3 as shipped in OrthoSimulator's bin/ folder (the same one the
+    simulation uses), or iqtree3 on the PATH if bin/ has none."""
+    bundled = Path(__file__).resolve().parents[2] / "bin" / "iqtree3"
+    if bundled.is_file():
+        return str(bundled)
+    found = shutil.which("iqtree3")
+    if found:
+        return found
+    raise FileNotFoundError("IQ-TREE 3 not found: expected bin/iqtree3 in the OrthoSimulator folder or iqtree3 on the PATH")
+
+
 class PfamModelExtractor:
     def __init__(self, pfam_scan_folder, results_dir, threads):
         self.pfam_scan_folder = Path(pfam_scan_folder).expanduser().resolve()
@@ -176,7 +188,7 @@ class PfamModelExtractor:
         if iqtree_file.exists():
             return iqtree_file
         cmd = [
-            "iqtree3",
+            iqtree_executable(),
             "--quiet",
             "-s", str(alignment_file),
             "-mset", "LG+I,JTT+G",
@@ -309,6 +321,12 @@ class PfamModelExtractor:
                 continue
 
         models = self.load_all_models()
+        if all_pfams and not any(p in models for p in all_pfams):
+            # without any domain model the species cannot be simulated, so stop here
+            # rather than write a model table with every model empty
+            print("\nERROR: no substitution model could be estimated for any of the "
+                  f"{len(all_pfams)} PFAM domains (see the warnings above).")
+            sys.exit(1)
         written_csvs = self.write_all_species_model_csvs(species_pfams, models)
         print("\nDone.")
         print(f"Wrote {len(written_csvs)} per-species model CSVs to:")
