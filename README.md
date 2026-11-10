@@ -157,7 +157,21 @@ OrthoSimulator uses PFAM domain annotations to simulate domain and non-domain re
 
 The data for each species is stored as one compressed file, `PFAM/archives/<species>.tar.xz`. OrthoSimulator unpacks the species it needs the first time you use it, so you do not need to do anything. To unpack everything in advance, run `python scripts/PFAM/pfam_archive.py unpack`.
 
-To use another species as the source of starting sequences, run `--PFAM` on its proteome. This needs `pfam_scan.pl` and HMMER on your path. The first `--PFAM` run downloads the Pfam-A database into `PFAM/pfam_db/` and prepares it for HMMER (`scripts/PFAM/download_pfamDB.sh`, which needs `wget` and an internet connection); later runs reuse it.
+To use another species as the source of starting sequences, run `--PFAM` on its proteome. This needs `pfam_scan.pl`, HMMER and `wget` on your path. They are easiest to install in an environment of their own, because they need a newer Perl than fits in the `orthosimulator` environment:
+
+```bash
+conda create -n pfamtools -c conda-forge -c bioconda pfam_scan hmmer wget "perl>=5.32"
+```
+
+Then, with the `orthosimulator` environment active, put just those programs first on your path before running `--PFAM`:
+
+```bash
+mkdir -p pfam_tools_bin
+for t in pfam_scan.pl hmmscan hmmpress perl wget; do ln -sf "$(conda run -n pfamtools which $t)" pfam_tools_bin/$t; done
+export PATH="$PWD/pfam_tools_bin:$PATH"
+```
+
+The first `--PFAM` run downloads the Pfam-A database into `PFAM/pfam_db/` and prepares it for HMMER (`scripts/PFAM/download_pfamDB.sh`); later runs reuse it. For each domain found, `--PFAM` downloads the domain's seed alignment from InterPro and estimates a substitution model with IQ-TREE, so it needs an internet connection. Most domains take seconds, but a domain with a very large seed alignment (thousands of sequences) can take an hour or more.
 
 ```bash
 python OrthoSimulator.py \
