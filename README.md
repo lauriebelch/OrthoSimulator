@@ -21,6 +21,7 @@ The simulations are trained on real data. You give OrthoSimulator the orthogroup
 - [Output files](#output-files)
 - [Benchmarking an orthology inference tool](#benchmarking-an-orthology-inference-tool)
 - [Citation](#citation)
+- [Licence](#licence)
 - [Contact](#contact)
 
 ## Installation
@@ -156,7 +157,7 @@ OrthoSimulator uses PFAM domain annotations to simulate domain and non-domain re
 
 The data for each species is stored as one compressed file, `PFAM/archives/<species>.tar.xz`. OrthoSimulator unpacks the species it needs the first time you use it, so you do not need to do anything. To unpack everything in advance, run `python scripts/PFAM/pfam_archive.py unpack`.
 
-To use another species as the source of starting sequences, run `--PFAM` on its proteome. This needs `pfam_scan.pl`, HMMER and the Pfam-A database (see `scripts/PFAM/download_pfamDB.sh`):
+To use another species as the source of starting sequences, run `--PFAM` on its proteome. This needs `pfam_scan.pl` and HMMER on your path. The first `--PFAM` run downloads the Pfam-A database into `PFAM/pfam_db/` and prepares it for HMMER (`scripts/PFAM/download_pfamDB.sh`, which needs `wget` and an internet connection); later runs reuse it.
 
 ```bash
 python OrthoSimulator.py \
@@ -165,6 +166,8 @@ python OrthoSimulator.py \
   --Proteome path/to/MySpecies.fa \
   --threads 8
 ```
+
+The results are stored in `PFAM/` under the name of the FASTA file without its extension (here `MySpecies`). To simulate from the new species, set `species=MySpecies` in the simulation config, or pass `--species MySpecies`.
 
 ## Output files
 
@@ -182,6 +185,8 @@ A simulation writes these files to `--output`.
 | `config.txt`, `orthogroup_simulation_parameters.txt`, `Run_log.txt` | The settings used and a log of the run. |
 
 Simulated genes are named `<species>_<orthogroup>_<copy>`.
+
+Occasionally AliSim cannot simulate an orthogroup, for example when a very deep tree and a high deletion rate delete nearly every site. That orthogroup is then skipped and left out of every output file, and the run ends with a warning that lists the skipped orthogroups.
 
 ## Benchmarking an orthology inference tool
 
@@ -203,6 +208,10 @@ The other scripts in `benchmarking/` are `bootstrap_rank_support.py` and `bootst
 ## Citation
 
 Holmes J, Kelly SK, Belcher LJ. OrthoSimulator: Empirically trained simulations for ground-truth benchmarking of orthology inference. *bioRxiv* (2026).
+
+## Licence
+
+OrthoSimulator is released under the GNU General Public License v3.0 (see `LICENSE`). IQ-TREE and SaGePhy in `bin/` are distributed under their own licences.
 
 ## Contact
 
